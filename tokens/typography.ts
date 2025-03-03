@@ -1,5 +1,5 @@
 // Typography Design Tokens
-import { TypographyTokens, TypographyStyle } from './types';
+import { TypographyTokens, TypographyStyle } from './token-types';
 
 const typography: TypographyTokens = {
   // Base font family

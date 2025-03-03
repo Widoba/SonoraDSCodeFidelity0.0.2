@@ -1,5 +1,5 @@
 // Color Design Tokens
-import { ColorTokens, ColorToken } from './types';
+import { ColorTokens, ColorToken } from './token-types';
 
 export const colors: ColorTokens = {
   // Primary Neutrals

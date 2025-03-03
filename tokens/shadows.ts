@@ -1,5 +1,5 @@
 // Shadow Tokens
-import { ShadowTokens, ShadowToken } from './types';
+import { ShadowTokens, ShadowToken } from './token-types';
 
 export const shadows: ShadowTokens = {
   outerDark9: {

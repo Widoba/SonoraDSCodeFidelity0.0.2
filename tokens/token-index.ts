@@ -7,8 +7,8 @@ import {
   getAllColorTokens 
 } from './colors';
 
+import typography from './typography';
 import { 
-  typography, 
   getTypographyStyle, 
   getTextStyleClasses,
   getAllTypographyStyles
@@ -39,7 +39,7 @@ export {
 };
 
 // Export token types
-export * from './types';
+export * from './token-types';
 
 // Export token getters
 export { 
