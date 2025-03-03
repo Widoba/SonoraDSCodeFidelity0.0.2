@@ -1,10 +1,9 @@
-import { CLIOptions } from './types';
-import { createRepositoryAccess } from '../repository-access';
+const { createRepositoryAccess } = require('../repository-access');
 
 /**
  * Handle CLI options to execute the lovable transformer
  */
-export async function handleCLI(options: CLIOptions): Promise<any> {
+async function handleCLI(options) {
   try {
     // Create repository access
     const repoConfig = options.sourceType === 'github-api'
@@ -47,7 +46,7 @@ export async function handleCLI(options: CLIOptions): Promise<any> {
 /**
  * Handle list command
  */
-async function handleList(repoAccess: any): Promise<string[]> {
+async function handleList(repoAccess) {
   try {
     const components = await repoAccess.listComponents();
     
@@ -64,7 +63,7 @@ async function handleList(repoAccess: any): Promise<string[]> {
 /**
  * Handle show command
  */
-async function handleShow(repoAccess: any, componentName: string): Promise<any> {
+async function handleShow(repoAccess, componentName) {
   try {
     const files = await repoAccess.getComponentFiles(componentName);
     
@@ -89,3 +88,8 @@ async function handleShow(repoAccess: any, componentName: string): Promise<any> 
     throw error;
   }
 }
+
+// Export the handleCLI function
+module.exports = {
+  handleCLI
+};

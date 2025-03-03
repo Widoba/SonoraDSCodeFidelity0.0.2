@@ -1,7 +1,7 @@
 /**
  * CLI options for the Lovable transformer
  */
-export interface CLIOptions {
+interface CLIOptions {
   /**
    * Command to execute
    */
@@ -66,3 +66,8 @@ export interface CLIOptions {
     path?: string;
   };
 }
+
+// Export the types
+module.exports = {
+  CLIOptions
+};

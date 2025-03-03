@@ -1,27 +1,13 @@
-import { RepositoryAccess, GitHubConfig, ComponentFile } from './types';
+// No need for imports in CommonJS
 
-// Define Octokit types without requiring the library, so we don't need to
-// install it during the initial phase if not needed
-interface OctokitResponse<T> {
-  data: T;
-}
-
-interface OctokitContent {
-  name: string;
-  path: string;
-  type: string;
-  content?: string;
-  encoding?: string;
-}
+// Define Octokit shapes for documentation only
+// No actual type checking in CommonJS
 
 /**
  * Repository access implementation using GitHub API
  */
-export class GitHubAPIAccess implements RepositoryAccess {
-  private config: GitHubConfig;
-  private octokit: any; // Will be Octokit instance
-  
-  constructor(config: GitHubConfig) {
+class GitHubAPIAccess {
+  constructor(config) {
     this.config = {
       ref: 'main',
       ...config
@@ -170,3 +156,8 @@ export class GitHubAPIAccess implements RepositoryAccess {
     }
   }
 }
+
+// Export the GitHubAPIAccess class
+module.exports = {
+  GitHubAPIAccess
+};

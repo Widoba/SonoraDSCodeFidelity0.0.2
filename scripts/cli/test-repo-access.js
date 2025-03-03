@@ -1,3 +1,9 @@
+#!/usr/bin/env node
+
+/**
+ * This is a simplified test script for the repository access functionality
+ */
+
 const fs = require('fs/promises');
 const path = require('path');
 const { exec } = require('child_process');
@@ -20,7 +26,7 @@ class LocalCloneAccess {
   /**
    * Set up the repository (clone or update)
    */
-  async setup(): Promise<void> {
+  async setup() {
     try {
       // Check if repository exists locally
       const repoExists = await fs.access(this.config.localPath)
@@ -69,7 +75,7 @@ class LocalCloneAccess {
   /**
    * List all components in the repository
    */
-  async listComponents(): Promise<string[]> {
+  async listComponents() {
     try {
       // Parse the component pattern to determine the directory to search
       const { componentDir, componentNamePattern } = this.parseComponentPattern();
@@ -102,7 +108,7 @@ class LocalCloneAccess {
   /**
    * Get files for a specific component
    */
-  async getComponentFiles(componentName: string): Promise<ComponentFile[]> {
+  async getComponentFiles(componentName) {
     try {
       // Parse the component pattern to determine the component directory
       const { componentDir } = this.parseComponentPattern();
@@ -125,7 +131,7 @@ class LocalCloneAccess {
       const files = await this.getFilesRecursively(componentFullPath);
       
       // Filter and process component files
-      const componentFiles: ComponentFile[] = await Promise.all(
+      const componentFiles = await Promise.all(
         files
           .filter(file => file.endsWith('.ts') || 
                          file.endsWith('.tsx') || 
@@ -153,7 +159,7 @@ class LocalCloneAccess {
   /**
    * Parse component pattern to extract directory and pattern
    */
-  private parseComponentPattern(): { componentDir: string; componentNamePattern: string } {
+  parseComponentPattern() {
     // Default pattern: src/components/{componentName}
     const pattern = this.config.componentPattern || 'src/components/{componentName}';
     
@@ -177,7 +183,7 @@ class LocalCloneAccess {
   /**
    * Get all files in a directory recursively
    */
-  private async getFilesRecursively(dir: string): Promise<string[]> {
+  async getFilesRecursively(dir) {
     const entries = await fs.readdir(dir, { withFileTypes: true });
     
     const files = await Promise.all(
@@ -196,7 +202,75 @@ class LocalCloneAccess {
   }
 }
 
-// Export the LocalCloneAccess class
-module.exports = {
-  LocalCloneAccess
-};
+/**
+ * Clean up temporary repository
+ */
+async function cleanupRepository(repoPath) {
+  try {
+    console.log(`\nCleaning up repository at ${repoPath}...`);
+    // Use fs.rm with recursive option (Node.js v14.14.0+)
+    await fs.rm(repoPath, { recursive: true, force: true });
+    console.log('Cleanup completed successfully');
+  } catch (error) {
+    console.error('Cleanup failed:', error);
+  }
+}
+
+/**
+ * Test function
+ */
+async function testLocalClone(cleanup = false) {
+  const repoPath = path.join(process.cwd(), 'tmp/test-repo');
+  
+  try {
+    const repoAccess = new LocalCloneAccess({
+      repoUrl: 'https://github.com/facebook/react.git',
+      localPath: repoPath,
+      branch: 'main',
+      componentPattern: 'packages/{componentName}'
+    });
+    
+    // Set up the repository
+    console.log('Setting up repository...');
+    await repoAccess.setup();
+    
+    // List components
+    console.log('Listing components...');
+    const components = await repoAccess.listComponents();
+    console.log('Available components:');
+    components.slice(0, 5).forEach(component => console.log(`- ${component}`));
+    console.log(`...and ${components.length - 5} more`);
+    
+    // Get files for a component
+    if (components.length > 0) {
+      const componentName = components[0];
+      console.log(`\nGetting files for component: ${componentName}`);
+      const files = await repoAccess.getComponentFiles(componentName);
+      console.log(`Found ${files.length} files. First 3 files:`);
+      files.slice(0, 3).forEach(file => {
+        console.log(`- ${file.path}`);
+        // Show first 3 lines of each file
+        const contentPreview = file.content.split('\n').slice(0, 3).join('\n');
+        console.log(`  Preview:\n${contentPreview}\n  ...`);
+      });
+    }
+    
+    console.log('\nTest completed successfully!');
+  } catch (error) {
+    console.error('Test failed:', error);
+  } finally {
+    // Clean up if requested
+    if (cleanup) {
+      await cleanupRepository(repoPath);
+    } else {
+      console.log('\nSkipping cleanup. Repository remains at:', repoPath);
+      console.log('To clean up manually, run: rm -rf', repoPath);
+    }
+  }
+}
+
+// Check if cleanup flag is passed
+const shouldCleanup = process.argv.includes('--cleanup');
+
+// Run the test
+testLocalClone(shouldCleanup);

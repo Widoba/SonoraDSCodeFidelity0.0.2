@@ -1,24 +1,25 @@
-// Export all types
-export * from './types';
-
-// Export implementations
-export { LocalCloneAccess } from './local-clone';
-export { GitHubAPIAccess } from './github-api';
+// Not using import/export syntax for better compatibility with the CLI tool
+const types = require('./types');
+const { LocalCloneAccess } = require('./local-clone');
+const { GitHubAPIAccess } = require('./github-api');
 
 // Factory function to create repository access
-export const createRepositoryAccess = async (
-  type: 'github-api' | 'local-clone',
-  config: any
-) => {
+async function createRepositoryAccess(type, config) {
   if (type === 'github-api') {
-    const { GitHubAPIAccess } = await import('./github-api');
     const access = new GitHubAPIAccess(config);
     await access.setup();
     return access;
   } else {
-    const { LocalCloneAccess } = await import('./local-clone');
     const access = new LocalCloneAccess(config);
     await access.setup();
     return access;
   }
+}
+
+// Export everything
+module.exports = {
+  ...types,
+  LocalCloneAccess,
+  GitHubAPIAccess,
+  createRepositoryAccess
 };
