@@ -181,5 +181,91 @@ program
     }
   });
 
+// Add transform command
+program
+  .command('transform')
+  .description('Transform component to use design tokens')
+  .requiredOption('-n, --name <n>', 'Component name')
+  .option('-g, --github', 'Use GitHub API for repository access')
+  .option('-o, --owner <owner>', 'GitHub repository owner (for GitHub API)')
+  .option('-r, --repo <repo>', 'GitHub repository name (for GitHub API)')
+  .option('--ref <ref>', 'GitHub reference (branch, tag, or commit SHA)')
+  .option('--auth <token>', 'GitHub authentication token')
+  .option('-u, --url <url>', 'Git repository URL (for local clone)')
+  .option('-p, --path <path>', 'Local path to clone repository (for local clone)')
+  .option('-b, --branch <branch>', 'Git branch to use (for local clone)')
+  .option('-c, --component-pattern <pattern>', 'Pattern for component directories', 'src/components/{componentName}')
+  .option('-d, --output-dir <dir>', 'Directory to save transformed files', './tmp/transformed')
+  .option('-f, --format <format>', 'Output format (json or text)', 'text')
+  .action(async (options) => {
+    try {
+      const cliOptions = {
+        command: 'transform',
+        sourceType: options.github ? 'github-api' : 'local-clone',
+        component: options.name,
+        outputDir: options.outputDir,
+        repo: {
+          owner: options.owner,
+          repo: options.repo,
+          ref: options.ref,
+          auth: options.auth,
+          repoUrl: options.url,
+          localPath: options.path || path.join(process.cwd(), 'tmp/lovable-repo'),
+          branch: options.branch,
+          componentPattern: options.componentPattern
+        },
+        output: {
+          format: options.format
+        }
+      };
+      
+      const result = await handleCLI(cliOptions);
+      
+      if (options.format === 'json') {
+        console.log(JSON.stringify(result, null, 2));
+      }
+    } catch (error: any) {
+      console.error('Error:', error.message || String(error));
+      process.exit(1);
+    }
+  });
+
+// Add checkbox command for easy testing with our sample
+program
+  .command('transform-checkbox')
+  .description('Transform the example Lovable checkbox component')
+  .option('-d, --debug', 'Show debug information')
+  .action(async (options) => {
+    try {
+      console.log('Running checkbox component transformer...');
+      
+      // Uses the main CLI command for transformation
+      const { execSync } = require('child_process');
+      const cmd = 'ts-node scripts/cli/lovable-transformer.ts transform -n checkbox -p ./tmp/checkbox-component -c src/components/checkbox -d ./tmp/transformed-checkbox';
+      
+      try {
+        const result = execSync(cmd).toString();
+        if (options.debug) {
+          console.log(result);
+        } else {
+          console.log('Checkbox component transformed successfully!');
+          console.log('Transformed files saved to: ./tmp/transformed-checkbox/checkbox');
+        }
+      } catch (err) {
+        console.error('Error running TypeScript CLI. Falling back to standalone script...');
+        const result = execSync('node scripts/cli/transform-checkbox.js').toString();
+        if (options.debug) {
+          console.log(result);
+        } else {
+          console.log('Checkbox component transformed using standalone script!');
+          console.log('Transformed files saved to: tmp/transformed-checkbox');
+        }
+      }
+    } catch (error: any) {
+      console.error('Error:', error.message || String(error));
+      process.exit(1);
+    }
+  });
+
 // Parse command line arguments
 program.parse();

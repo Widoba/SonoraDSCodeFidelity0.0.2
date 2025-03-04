@@ -4,18 +4,28 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 ### Added
-- Implemented Phase 2 of Lovable Component Transformer
+- Completed Phase 2 of Lovable Component Transformer with full integration
 - Created component analyzer functionality:
-  - Extraction of color values from component files
+  - Extraction of color values from component files (hex and rgba)
   - Extraction of border radius values
   - Extraction of shadow values
   - Extraction and categorization of Tailwind classes
 - Built component transformer functionality:
   - Transformation of hex colors to CSS variables
+  - Transformation of rgba colors to CSS variables
   - Transformation of border radius values to CSS variables
   - Transformation of shadow values to CSS variables
   - Transformation of Tailwind classes to token-based classes
-- Added standalone script for testing component analysis and transformation
+- Enhanced CLI with transform command integration:
+  - Added transform command to TypeScript CLI
+  - Added dedicated transform-checkbox command for easy testing
+  - Added standalone script for testing component transformation without TypeScript compilation
+- Demonstrated successful transformation with real Lovable checkbox component
+
+### Fixed
+- Support for rgba color values in both analysis and transformation
+- Improved handling of Tailwind utility variants using the `cn()` function
+- Enhanced extraction regex patterns for better match accuracy
 
 ## [0.0.2] - 2025-03-03
 ### Added

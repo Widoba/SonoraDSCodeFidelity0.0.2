@@ -16,6 +16,11 @@ export interface ComponentAnalysis {
   colors: string[];
   
   /**
+   * RGBA color values found in the component
+   */
+  rgbaColors: string[];
+  
+  /**
    * Border radius values found in the component
    */
   borderRadii: string[];
@@ -29,6 +34,14 @@ export interface ComponentAnalysis {
    * Tailwind classes found in the component
    */
   tailwindClasses: string[];
+  
+  /**
+   * Design token imports detected in the component
+   */
+  tokenImports?: {
+    source: string;
+    tokens: string[];
+  }[];
 }
 
 /**
@@ -43,6 +56,46 @@ export interface CategorizedClasses {
 }
 
 /**
+ * Extract token imports from component code
+ * 
+ * @param content Component file content
+ * @returns Array of token import objects
+ */
+export function extractTokenImports(content: string): { source: string; tokens: string[] }[] {
+  const imports: { source: string; tokens: string[] }[] = [];
+  
+  // Find import statements
+  const importRegex = /import\s+\{\s*([^}]+)\s*\}\s+from\s+["']([^"']+)["'];?/g;
+  let match;
+  
+  while ((match = importRegex.exec(content)) !== null) {
+    const importedTokens = match[1].split(',').map(t => t.trim());
+    const source = match[2];
+    
+    // Check if this is likely a token import (based on the source path or imported tokens)
+    const isTokenImport = 
+      source.includes('tokens') || 
+      source.includes('design-system') ||
+      importedTokens.some(token => 
+        token === 'colors' || 
+        token === 'shadows' || 
+        token === 'typography' || 
+        token === 'borderRadius' ||
+        token.toLowerCase().includes('token')
+      );
+    
+    if (isTokenImport) {
+      imports.push({
+        source,
+        tokens: importedTokens
+      });
+    }
+  }
+  
+  return imports;
+}
+
+/**
  * Analyzes component files for values that can be converted to tokens
  * 
  * @param componentFiles Array of component files to analyze
@@ -51,9 +104,11 @@ export interface CategorizedClasses {
 export async function analyzeComponent(componentFiles: ComponentFile[]): Promise<ComponentAnalysis> {
   const analysis = {
     colors: new Set<string>(),
+    rgbaColors: new Set<string>(),
     borderRadii: new Set<string>(),
     shadows: new Set<string>(),
-    tailwindClasses: [] as string[]
+    tailwindClasses: [] as string[],
+    tokenImports: [] as { source: string; tokens: string[] }[]
   };
 
   // Extract all values from component files
@@ -66,9 +121,19 @@ export async function analyzeComponent(componentFiles: ComponentFile[]): Promise
     console.log(`\nAnalyzing file: ${file.name}`);
     const content = file.content;
 
+    // Extract token imports
+    const tokenImports = extractTokenImports(content);
+    if (tokenImports.length > 0) {
+      analysis.tokenImports = [...analysis.tokenImports, ...tokenImports];
+    }
+
     // Extract color values (hex)
     const hexColors = extractHexColors(content);
     hexColors.forEach(color => analysis.colors.add(color));
+    
+    // Extract rgba colors
+    const rgbaColors = extractRgbaColors(content);
+    rgbaColors.forEach(color => analysis.rgbaColors.add(color));
 
     // Extract border-radius values
     const borderRadii = extractBorderRadii(content);
@@ -88,9 +153,11 @@ export async function analyzeComponent(componentFiles: ComponentFile[]): Promise
 
   return {
     colors: [...analysis.colors],
+    rgbaColors: [...analysis.rgbaColors],
     borderRadii: [...analysis.borderRadii],
     shadows: [...analysis.shadows],
-    tailwindClasses: analysis.tailwindClasses
+    tailwindClasses: analysis.tailwindClasses,
+    tokenImports: analysis.tokenImports
   };
 }
 
@@ -104,6 +171,30 @@ export function extractHexColors(content: string): string[] {
   // Match hex colors (#fff, #ffffff, etc.)
   const hexRegex = /#([0-9A-Fa-f]{3}){1,2}\b/g;
   const matches = content.match(hexRegex) || [];
+  
+  // Normalize hex colors (convert shorthand to full form)
+  return matches.map(color => {
+    // If it's a shorthand hex color (#fff), convert to full form (#ffffff)
+    if (color.length === 4) {
+      const r = color[1];
+      const g = color[2];
+      const b = color[3];
+      return `#${r}${r}${g}${g}${b}${b}`;
+    }
+    return color;
+  });
+}
+
+/**
+ * Extract rgba color values from code
+ * 
+ * @param content Component file content
+ * @returns Array of rgba color values
+ */
+export function extractRgbaColors(content: string): string[] {
+  // Match rgba colors
+  const rgbaRegex = /rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*([0-9.]+)\s*\)/g;
+  const matches = content.match(rgbaRegex) || [];
   return matches;
 }
 

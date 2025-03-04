@@ -23,6 +23,11 @@ export interface CLIOptions {
   all?: boolean;
   
   /**
+   * Output directory for transformed files
+   */
+  outputDir?: string;
+  
+  /**
    * Repository configuration
    */
   repo: {
