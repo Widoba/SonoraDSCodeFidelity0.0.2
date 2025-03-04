@@ -19,7 +19,8 @@ import {
 import { 
   findColorToken, 
   findBorderRadiusToken, 
-  findShadowToken 
+  findShadowToken,
+  findTypographyToken 
 } from './token-matcher';
 
 /**
@@ -60,6 +61,11 @@ export interface TransformationSummary {
    * Number of shadows transformed
    */
   shadowsTransformed: number;
+  
+  /**
+   * Number of typography styles transformed
+   */
+  typographyTransformed: number;
   
   /**
    * Number of Tailwind classes transformed
@@ -421,15 +427,17 @@ function transformShadows(content: string): { content: string; count: number } {
 
 /**
  * Transform Tailwind classes to use design tokens
+ * Includes typography transformations as well
  * 
  * @param content File content
- * @returns Transformed content and transformation count
+ * @returns Transformed content and transformation counts
  */
 function transformTailwindClasses(
   content: string
-): { content: string; count: number } {
+): { content: string; count: number; typographyCount: number } {
   let transformedContent = content;
   let count = 0;
+  let typographyCount = 0;
   
   // Transform color utilities
   const colorUtilityRegex = /(bg|text|border)-\[#([0-9A-Fa-f]{3,6})\]/g;
@@ -542,7 +550,113 @@ function transformTailwindClasses(
     }
   }
   
-  return { content: transformedContent, count };
+  // Transform typography utilities
+  // First, look for class groups that represent typography styles
+  const classGroupRegex = /className="([^"]+)"/g;
+  const classGroups = [];
+  
+  // Find all className attributes
+  while ((match = classGroupRegex.exec(content)) !== null) {
+    const classes = match[1].trim();
+    // Only consider groups with typography-related classes
+    if (
+      classes.includes('text-') || 
+      classes.includes('font-') || 
+      classes.includes('leading-')
+    ) {
+      classGroups.push({
+        full: match[0],
+        value: classes
+      });
+    }
+  }
+  
+  // Process each class group
+  for (const { full, value } of classGroups) {
+    const tokenMatch = findTypographyToken(value);
+    
+    if (tokenMatch && tokenMatch.confidence > 0.7) {
+      // Extract non-typography classes
+      const allClasses = value.split(/\s+/);
+      const nonTypoClasses = allClasses.filter(cls => 
+        !cls.startsWith('text-') && 
+        !cls.startsWith('font-') && 
+        !cls.startsWith('leading-')
+      );
+      
+      // Get the token classes
+      const tokenClasses = [
+        tokenMatch.token.size.twClass,
+        tokenMatch.token.weight.twClass
+      ];
+      
+      if (tokenMatch.token.lineHeight?.twClass) {
+        tokenClasses.push(tokenMatch.token.lineHeight.twClass);
+      }
+      
+      // Combine token classes with non-typography classes
+      const newClasses = [...nonTypoClasses, ...tokenClasses].join(' ');
+      const newClassName = `className="${newClasses}"`;
+      
+      // Replace the className
+      transformedContent = transformedContent.replace(full, newClassName);
+      typographyCount++;
+    }
+  }
+  
+  // Transform individual typography classes (like text-[16px])
+  const fontSizeRegex = /text-\[(\d+)px\]/g;
+  const fontSizeMatches = [];
+  
+  // Find all font size arbitrary values
+  while ((match = fontSizeRegex.exec(content)) !== null) {
+    fontSizeMatches.push({
+      full: match[0],
+      value: `${match[1]}px`
+    });
+  }
+  
+  // Replace each font size match
+  for (const { full, value } of fontSizeMatches) {
+    const tokenMatch = findTypographyToken(value);
+    
+    if (tokenMatch && tokenMatch.confidence > 0.7) {
+      // Replace with token class
+      transformedContent = transformedContent.replace(
+        full,
+        tokenMatch.token.size.twClass
+      );
+      typographyCount++;
+    }
+  }
+  
+  // Transform font weight arbitrary values
+  const fontWeightRegex = /font-\[(\d+)\]/g;
+  const fontWeightMatches = [];
+  
+  // Find all font weight arbitrary values
+  while ((match = fontWeightRegex.exec(content)) !== null) {
+    fontWeightMatches.push({
+      full: match[0],
+      value: match[1]
+    });
+  }
+  
+  // Replace each font weight match
+  for (const { full, value } of fontWeightMatches) {
+    const tokenMatch = findTypographyToken(value);
+    
+    if (tokenMatch && tokenMatch.confidence > 0.7) {
+      // Replace with token class
+      transformedContent = transformedContent.replace(
+        full,
+        tokenMatch.token.weight.twClass
+      );
+      typographyCount++;
+    }
+  }
+  
+  return { content: transformedContent, count, typographyCount };
 }
 
 /**
@@ -561,6 +675,7 @@ export async function transformComponent(
     colorsTransformed: 0,
     borderRadiiTransformed: 0,
     shadowsTransformed: 0,
+    typographyTransformed: 0,
     tailwindClassesTransformed: 0
   };
   
@@ -599,10 +714,16 @@ export async function transformComponent(
       content = shadowsResult.content;
       summary.shadowsTransformed += shadowsResult.count;
       
+      // Transform CSS typography properties
+      const typographyResult = transformTypography(content);
+      content = typographyResult.content;
+      summary.typographyTransformed += typographyResult.count;
+      
       // Transform Tailwind classes
       const tailwindResult = transformTailwindClasses(content);
       content = tailwindResult.content;
       summary.tailwindClassesTransformed += tailwindResult.count;
+      summary.typographyTransformed += tailwindResult.typographyCount;
       
       return {
         ...file,
@@ -616,4 +737,177 @@ export async function transformComponent(
     transformedFiles,
     summary
   };
+}
+
+/**
+ * Transform CSS typography properties to use design tokens
+ * 
+ * @param content File content
+ * @returns Transformed content and transformation count
+ */
+function transformTypography(content: string): { content: string; count: number } {
+  let transformedContent = content;
+  let count = 0;
+  
+  // Transform font-size CSS properties
+  const fontSizeRegex = /font-size:\s*(\d+)px/g;
+  const fontSizeMatches = [];
+  let match;
+  
+  // Find all matches first
+  while ((match = fontSizeRegex.exec(content)) !== null) {
+    fontSizeMatches.push({
+      full: match[0],
+      value: `${match[1]}px`
+    });
+  }
+  
+  // Replace each match
+  for (const { full, value } of fontSizeMatches) {
+    const tokenMatch = findTypographyToken(value);
+    
+    if (tokenMatch && tokenMatch.confidence > 0.7) {
+      // Get the token size value
+      const tokenSize = tokenMatch.token.size.value;
+      
+      // Replace with CSS variable
+      transformedContent = transformedContent.replace(
+        full,
+        `font-size: var(--text-${tokenMatch.token.name.replace('text-', '')})`
+      );
+      count++;
+    }
+  }
+  
+  // Transform font-weight CSS properties
+  const fontWeightRegex = /font-weight:\s*(\d+)/g;
+  const fontWeightMatches = [];
+  
+  // Reset match for new regex
+  while ((match = fontWeightRegex.exec(content)) !== null) {
+    fontWeightMatches.push({
+      full: match[0],
+      value: match[1]
+    });
+  }
+  
+  // Replace each match
+  for (const { full, value } of fontWeightMatches) {
+    const tokenMatch = findTypographyToken(value);
+    
+    if (tokenMatch && tokenMatch.confidence > 0.7) {
+      // Replace with CSS variable
+      transformedContent = transformedContent.replace(
+        full,
+        `font-weight: var(--font-weight-${tokenMatch.token.weight.value})`
+      );
+      count++;
+    }
+  }
+  
+  // Transform line-height CSS properties
+  const lineHeightRegex = /line-height:\s*([0-9.]+)/g;
+  const lineHeightMatches = [];
+  
+  // Reset match for new regex
+  while ((match = lineHeightRegex.exec(content)) !== null) {
+    lineHeightMatches.push({
+      full: match[0],
+      value: match[1]
+    });
+  }
+  
+  // Replace each match
+  for (const { full, value } of lineHeightMatches) {
+    const tokenMatch = findTypographyToken(value);
+    
+    if (tokenMatch && tokenMatch.confidence > 0.7 && tokenMatch.token.lineHeight) {
+      // Replace with CSS variable
+      transformedContent = transformedContent.replace(
+        full,
+        `line-height: var(--line-height-${tokenMatch.token.name.replace('text-', '')})`
+      );
+      count++;
+    }
+  }
+  
+  // Transform inline style objects with typography properties
+  const styleObjectRegex = /style=\{\{([^{}]+)\}\}/g;
+  const styleObjectMatches = [];
+  
+  // Reset match for new regex
+  while ((match = styleObjectRegex.exec(content)) !== null) {
+    const styleProps = match[1];
+    
+    if (styleProps.includes('fontSize') || styleProps.includes('fontWeight') || styleProps.includes('lineHeight')) {
+      styleObjectMatches.push({
+        full: match[0],
+        value: styleProps
+      });
+    }
+  }
+  
+  // Process style objects
+  for (const { full, value } of styleObjectMatches) {
+    let updatedStyle = value;
+    let styleChanged = false;
+    
+    // Check for fontSize
+    const fontSizeStyleMatch = /fontSize:\s*['"](\d+)px['"]/i.exec(value);
+    if (fontSizeStyleMatch) {
+      const fontSizeValue = `${fontSizeStyleMatch[1]}px`;
+      const tokenMatch = findTypographyToken(fontSizeValue);
+      
+      if (tokenMatch && tokenMatch.confidence > 0.7) {
+        updatedStyle = updatedStyle.replace(
+          /fontSize:\s*['"](\d+)px['"]/i,
+          `fontSize: "var(--text-${tokenMatch.token.name.replace('text-', '')})"`
+        );
+        styleChanged = true;
+        count++;
+      }
+    }
+    
+    // Check for fontWeight
+    const fontWeightStyleMatch = /fontWeight:\s*['"]?(\d+)['"]?/i.exec(value);
+    if (fontWeightStyleMatch) {
+      const fontWeightValue = fontWeightStyleMatch[1];
+      const tokenMatch = findTypographyToken(fontWeightValue);
+      
+      if (tokenMatch && tokenMatch.confidence > 0.7) {
+        updatedStyle = updatedStyle.replace(
+          /fontWeight:\s*['"]?(\d+)['"]?/i,
+          `fontWeight: "var(--font-weight-${tokenMatch.token.weight.value})"`
+        );
+        styleChanged = true;
+        count++;
+      }
+    }
+    
+    // Check for lineHeight
+    const lineHeightStyleMatch = /lineHeight:\s*['"]?([0-9.]+)['"]?/i.exec(value);
+    if (lineHeightStyleMatch) {
+      const lineHeightValue = lineHeightStyleMatch[1];
+      const tokenMatch = findTypographyToken(lineHeightValue);
+      
+      if (tokenMatch && tokenMatch.confidence > 0.7 && tokenMatch.token.lineHeight) {
+        updatedStyle = updatedStyle.replace(
+          /lineHeight:\s*['"]?([0-9.]+)['"]?/i,
+          `lineHeight: "var(--line-height-${tokenMatch.token.name.replace('text-', '')})"`
+        );
+        styleChanged = true;
+        count++;
+      }
+    }
+    
+    // If any style was changed, update the whole style object
+    if (styleChanged) {
+      transformedContent = transformedContent.replace(
+        full,
+        `style={{${updatedStyle}}}`
+      );
+    }
+  }
+  
+  return { content: transformedContent, count };
 }

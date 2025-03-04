@@ -9,10 +9,13 @@ import {
   getAllBorderRadiusTokens,
   getAllShadowTokens,
   getAllTypographyStyles,
+  getColorByName,
+  getBorderRadiusByName,
+  getShadowByName,
   ColorToken,
   BorderRadiusToken,
   ShadowToken,
-  TypographyToken
+  TypographyStyle
 } from '@tokens/token-index';
 
 /**
@@ -34,6 +37,153 @@ export interface TokenMatch<T> {
    */
   reason: string;
 }
+
+// ---------------------------
+// Tailwind v4 Token Mappings
+// ---------------------------
+
+/**
+ * Tailwind v4 semantic token mappings for colors
+ */
+const tailwindV4ColorMappings: Record<string, string[]> = {
+  // Map CSS variable names to our token names
+  '--white': ['neutral-white'],
+  '--charcoal': ['neutral-charcoal'],
+  
+  // Olivia Blue series
+  '--olivia-blue': ['olivia-blue'],
+  '--olivia-blue-dark': ['olivia-blue-dark'],
+  '--olivia-blue-t600': ['olivia-blue-t600'],
+  '--olivia-blue-t700': ['olivia-blue-t700'],
+  '--olivia-blue-t900': ['olivia-blue-t900'],
+  '--olivia-blue-t950': ['olivia-blue-t950'],
+  
+  // Midnight Teal
+  '--midnight-teal': ['midnight-teal'],
+
+  // Grey series
+  '--earl-grey': ['grey-earl'],
+  '--steel-grey': ['grey-steel'],
+  '--glitter-grey': ['grey-glitter'],
+  '--disco-grey': ['grey-disco'],
+  '--fog-grey': ['grey-fog'],
+  '--mist-grey': ['grey-mist'],
+
+  // Feedback Colors
+  '--danger-red': ['danger-red'],
+  '--danger-red-dark': ['danger-red-dark'],
+  '--danger-red-t300': ['danger-red-t300'],
+  '--danger-red-t900': ['danger-red-t900'],
+
+  '--caution-yellow': ['caution-yellow'],
+  '--caution-yellow-dark': ['caution-yellow-dark'],
+  '--caution-yellow-t300': ['caution-yellow-t300'],
+  '--caution-yellow-t900': ['caution-yellow-t900'],
+
+  '--go-green': ['success-green'],
+  '--go-green-dark': ['success-green-dark'],
+  '--go-green-t600': ['success-green-t300'],
+  '--go-green-t900': ['success-green-t900'],
+
+  // User Colors
+  '--cactus-green': ['user-employee'],
+  '--cactus-green-dark': ['user-employee-dark'],
+  '--cactus-green-t400': ['user-employee-t400'],
+  '--cactus-green-t800': ['user-employee-t800'],
+
+  // Semantic color mappings
+  '--color-background': ['neutral-white'],
+  '--color-foreground': ['neutral-charcoal'],
+  '--color-border': ['grey-steel'],
+  '--color-ring': ['grey-steel']
+};
+
+/**
+ * Tailwind v4 typography token mappings
+ */
+const tailwindV4TypographyMappings: Record<string, string[]> = {
+  // Font families
+  '--font-family-sans': ['font-sans'],
+  '--font-family-mono': ['font-mono'],
+  
+  // Headers
+  '--header-1-font-size': ['text-headline-h1'],
+  '--header-1-line-height': ['text-headline-h1'],
+  '--header-1-font-weight': ['text-headline-h1'],
+  
+  '--header-2-font-size': ['text-headline-h2'],
+  '--header-2-line-height': ['text-headline-h2'],
+  '--header-2-font-weight': ['text-headline-h2'],
+  
+  // Body
+  '--body-font-size': ['text-body'],
+  '--body-line-height': ['text-body'],
+  '--body-font-weight': ['text-body'],
+  
+  // Button
+  '--button-font-size': ['text-button'],
+  '--button-sm-font-size': ['text-button-sm'],
+  '--button-line-height': ['text-button', 'text-button-sm'],
+  '--button-font-weight': ['text-button', 'text-button-sm'],
+  
+  // Link
+  '--link-font-size': ['text-link'],
+  '--link-line-height': ['text-link'],
+  '--link-font-weight': ['text-link'],
+  
+  // Subtitle
+  '--subtitle-font-size': ['text-subtitle'],
+  '--subtitle-mini-font-size': ['text-subtitle-mini'],
+  '--subtitle-line-height': ['text-subtitle', 'text-subtitle-mini'],
+  '--subtitle-font-weight': ['text-subtitle', 'text-subtitle-mini'],
+  
+  // Input
+  '--input-lg-font-size': ['text-input-lg'],
+  '--input-lg-line-height': ['text-input-lg'],
+  '--input-lg-font-weight': ['text-input-lg'],
+  
+  '--input-sm-font-size': ['text-input-sm'],
+  '--input-sm-line-height': ['text-input-sm'],
+  '--input-sm-font-weight': ['text-input-sm'],
+  
+  // Tab label
+  '--tab-label-font-size': ['text-tab-label'],
+  '--tab-label-line-height': ['text-tab-label'],
+  '--tab-label-font-weight': ['text-tab-label'],
+  
+  // Avatar
+  '--avatar-font-size': ['text-avatar'],
+  '--avatar-line-height': ['text-avatar'],
+  '--avatar-font-weight': ['text-avatar'],
+  
+  '--avatar-sm-font-size': ['text-avatar-sm'],
+  '--avatar-sm-line-height': ['text-avatar-sm'],
+  '--avatar-sm-font-weight': ['text-avatar-sm'],
+  
+  // Tooltip
+  '--tooltip-font-size': ['text-tooltip'],
+  '--tooltip-line-height': ['text-tooltip'],
+  '--tooltip-font-weight': ['text-tooltip']
+};
+
+/**
+ * Tailwind v4 border radius token mappings
+ */
+const tailwindV4BorderRadiusMappings: Record<string, string[]> = {
+  '--border-radius-3xs': ['radius-sm'],
+  '--border-radius-2xs': ['radius-base'],
+  '--border-radius-xs': ['radius-lg'],
+  '--border-radius-sm': ['radius-xl'],
+  '--border-radius-md': ['radius-2xl']
+};
+
+/**
+ * Tailwind v4 shadow token mappings
+ */
+const tailwindV4ShadowMappings: Record<string, string[]> = {
+  '--shadow-border': ['shadow-base', 'shadow-sm'],
+  '--shadow-border-hover': ['shadow-md']
+};
 
 /**
  * Convert hex to RGB values
@@ -111,6 +261,7 @@ export function findColorToken(value: string): TokenMatch<ColorToken> | null {
   
   // Check if the value is already in CSS variable format
   if (value.startsWith('var(--')) {
+    // Check for direct color variable match (like var(--color-olivia-blue))
     const varMatch = value.match(/var\(--color-([^)]+)\)/);
     if (varMatch) {
       const tokenName = varMatch[1];
@@ -122,6 +273,26 @@ export function findColorToken(value: string): TokenMatch<ColorToken> | null {
           confidence: 1,
           reason: 'Exact CSS variable match'
         };
+      }
+    }
+    
+    // Check for Tailwind v4 variable match (like var(--olivia-blue))
+    const tailwindVarMatch = value.match(/var\(([^)]+)\)/);
+    if (tailwindVarMatch) {
+      const varName = tailwindVarMatch[1];
+      const mappedTokens = tailwindV4ColorMappings[varName];
+      
+      if (mappedTokens && mappedTokens.length > 0) {
+        for (const tokenName of mappedTokens) {
+          const token = getColorByName(tokenName);
+          if (token) {
+            return {
+              token,
+              confidence: 0.95, // High confidence for semantic mapping
+              reason: `Tailwind v4 variable mapping: ${varName} → ${tokenName}`
+            };
+          }
+        }
       }
     }
   }
@@ -245,6 +416,7 @@ export function findBorderRadiusToken(value: string): TokenMatch<BorderRadiusTok
   
   // Check if the value is already in CSS variable format
   if (value.startsWith('var(--')) {
+    // Check for direct radius variable match (like var(--radius-md))
     const varMatch = value.match(/var\(--radius-([^)]+)\)/);
     if (varMatch) {
       const tokenName = varMatch[1];
@@ -256,6 +428,26 @@ export function findBorderRadiusToken(value: string): TokenMatch<BorderRadiusTok
           confidence: 1,
           reason: 'Exact CSS variable match'
         };
+      }
+    }
+    
+    // Check for Tailwind v4 variable match (like var(--border-radius-xs))
+    const tailwindVarMatch = value.match(/var\(([^)]+)\)/);
+    if (tailwindVarMatch) {
+      const varName = tailwindVarMatch[1];
+      const mappedTokens = tailwindV4BorderRadiusMappings[varName];
+      
+      if (mappedTokens && mappedTokens.length > 0) {
+        for (const tokenName of mappedTokens) {
+          const token = getBorderRadiusByName(tokenName);
+          if (token) {
+            return {
+              token,
+              confidence: 0.95, // High confidence for semantic mapping
+              reason: `Tailwind v4 variable mapping: ${varName} → ${tokenName}`
+            };
+          }
+        }
       }
     }
   }
@@ -393,6 +585,7 @@ export function findShadowToken(value: string): TokenMatch<ShadowToken> | null {
   
   // Check if the value is already in CSS variable format
   if (value.startsWith('var(--')) {
+    // Check for direct shadow variable match (like var(--shadow-md))
     const varMatch = value.match(/var\(--shadow-([^)]+)\)/);
     if (varMatch) {
       const tokenName = varMatch[1];
@@ -404,6 +597,26 @@ export function findShadowToken(value: string): TokenMatch<ShadowToken> | null {
           confidence: 1,
           reason: 'Exact CSS variable match'
         };
+      }
+    }
+    
+    // Check for Tailwind v4 variable match (like var(--shadow-border))
+    const tailwindVarMatch = value.match(/var\(([^)]+)\)/);
+    if (tailwindVarMatch) {
+      const varName = tailwindVarMatch[1];
+      const mappedTokens = tailwindV4ShadowMappings[varName];
+      
+      if (mappedTokens && mappedTokens.length > 0) {
+        for (const tokenName of mappedTokens) {
+          const token = getShadowByName(tokenName);
+          if (token) {
+            return {
+              token,
+              confidence: 0.95, // High confidence for semantic mapping
+              reason: `Tailwind v4 variable mapping: ${varName} → ${tokenName}`
+            };
+          }
+        }
       }
     }
   }
@@ -567,6 +780,163 @@ function parseShadowComponents(shadow: string): {
     spreadRadius: match[4] ? parseInt(match[4]) : 0,
     opacity: match[8] ? parseFloat(match[8]) : null
   };
+}
+
+/**
+ * Find the best match for a typography value in the design token system
+ */
+export function findTypographyToken(value: string): TokenMatch<TypographyStyle> | null {
+  // Get all typography tokens
+  const typographyTokens = getAllTypographyStyles();
+  
+  // No tokens available
+  if (!typographyTokens.length) return null;
+  
+  // Check if the value is already in CSS variable format
+  if (value.startsWith('var(--')) {
+    // Check for Tailwind v4 variable match (like var(--header-1-font-size))
+    const tailwindVarMatch = value.match(/var\(([^)]+)\)/);
+    if (tailwindVarMatch) {
+      const varName = tailwindVarMatch[1];
+      const mappedTokens = tailwindV4TypographyMappings[varName];
+      
+      if (mappedTokens && mappedTokens.length > 0) {
+        for (const tokenName of mappedTokens) {
+          const token = typographyTokens.find(t => t.name === tokenName);
+          if (token) {
+            return {
+              token,
+              confidence: 0.95, // High confidence for semantic mapping
+              reason: `Tailwind v4 variable mapping: ${varName} → ${tokenName}`
+            };
+          }
+        }
+      }
+    }
+  }
+  
+  // Parse font styles from space-separated classes (e.g., "text-sm font-bold leading-5")
+  if (value.includes(' ')) {
+    const classes = value.split(/\s+/);
+    
+    // Extract properties from classes
+    let fontSize: string | null = null;
+    let fontWeight: string | null = null;
+    let lineHeight: string | null = null;
+    
+    for (const cls of classes) {
+      if (cls.startsWith('text-')) fontSize = cls;
+      if (cls.startsWith('font-')) fontWeight = cls;
+      if (cls.startsWith('leading-')) lineHeight = cls;
+    }
+    
+    // Find matching typography style
+    if (fontSize || fontWeight || lineHeight) {
+      let bestMatch: TypographyStyle | null = null;
+      let highestScore = 0;
+      
+      for (const token of typographyTokens) {
+        let score = 0;
+        let matchCount = 0;
+        
+        // Score fontSize match
+        if (fontSize && token.size.twClass === fontSize) {
+          score += 1;
+          matchCount++;
+        }
+        
+        // Score fontWeight match
+        if (fontWeight && token.weight.twClass === fontWeight) {
+          score += 1;
+          matchCount++;
+        }
+        
+        // Score lineHeight match
+        if (lineHeight && token.lineHeight?.twClass === lineHeight) {
+          score += 1;
+          matchCount++;
+        }
+        
+        // Calculate average score
+        const avgScore = matchCount > 0 ? score / matchCount : 0;
+        
+        if (avgScore > highestScore) {
+          highestScore = avgScore;
+          bestMatch = token;
+        }
+      }
+      
+      if (bestMatch && highestScore > 0.5) {
+        return {
+          token: bestMatch,
+          confidence: highestScore,
+          reason: `Typography class match (${Math.round(highestScore * 100)}% match)`
+        };
+      }
+    }
+  }
+  
+  // Handle individual Tailwind typography classes
+  const textSizeMap: Record<string, TypographyStyle[]> = {};
+  const fontWeightMap: Record<string, TypographyStyle[]> = {};
+  const lineHeightMap: Record<string, TypographyStyle[]> = {};
+  
+  // Build lookup maps
+  for (const token of typographyTokens) {
+    if (token.size.twClass) {
+      if (!textSizeMap[token.size.twClass]) textSizeMap[token.size.twClass] = [];
+      textSizeMap[token.size.twClass].push(token);
+    }
+    
+    if (token.weight.twClass) {
+      if (!fontWeightMap[token.weight.twClass]) fontWeightMap[token.weight.twClass] = [];
+      fontWeightMap[token.weight.twClass].push(token);
+    }
+    
+    if (token.lineHeight?.twClass) {
+      if (!lineHeightMap[token.lineHeight.twClass]) lineHeightMap[token.lineHeight.twClass] = [];
+      lineHeightMap[token.lineHeight.twClass].push(token);
+    }
+  }
+  
+  // Check for single class match
+  if (value.startsWith('text-')) {
+    const matches = textSizeMap[value] || [];
+    if (matches.length > 0) {
+      // Prefer more specific tokens like button or input text over general body text
+      const specificMatch = matches.find(t => t.name.includes('button') || t.name.includes('input'));
+      
+      return {
+        token: specificMatch || matches[0],
+        confidence: 0.8,
+        reason: 'Font size class match'
+      };
+    }
+  }
+  
+  if (value.startsWith('font-')) {
+    const matches = fontWeightMap[value] || [];
+    if (matches.length > 0) {
+      return {
+        token: matches[0],
+        confidence: 0.7,
+        reason: 'Font weight class match'
+      };
+    }
+  }
+  
+  if (value.startsWith('leading-')) {
+    const matches = lineHeightMap[value] || [];
+    if (matches.length > 0) {
+      return {
+        token: matches[0],
+        confidence: 0.7,
+        reason: 'Line height class match'
+      };
+    }
+  }
+  
+  return null;
 }
 
 /**

@@ -2,11 +2,12 @@
 
 /**
  * Script for analyzing and transforming components from the test repository
- * This script demonstrates the dynamic token matching system
+ * This script demonstrates the dynamic token matching system with Tailwind v4 tokens
  */
 
 const path = require('path');
 const fs = require('fs/promises');
+const fsSync = require('fs');
 const util = require('util');
 const { exec } = require('child_process');
 
@@ -14,7 +15,7 @@ const { exec } = require('child_process');
 const execAsync = util.promisify(exec);
 
 // Test repository path
-const TEST_REPO = path.join(process.cwd(), 'tmp/test-repo');
+const TEST_REPO = path.join(process.cwd(), 'tmp/p-562375');
 
 /**
  * Get component files from a directory
