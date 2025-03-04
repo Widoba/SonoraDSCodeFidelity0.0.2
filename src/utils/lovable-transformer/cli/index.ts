@@ -1,9 +1,9 @@
-const { createRepositoryAccess } = require('../repository-access');
+import { createRepositoryAccess } from '../repository-access';
 
 /**
  * Handle CLI options to execute the lovable transformer
  */
-async function handleCLI(options) {
+export async function handleCLI(options) {
   try {
     // Create repository access
     const repoConfig = options.sourceType === 'github-api'
@@ -34,6 +34,15 @@ async function handleCLI(options) {
         }
         return await handleShow(repoAccess, options.component);
         
+      case 'analyze':
+        if (!options.component) {
+          throw new Error('Component name is required for analyze command');
+        }
+        // First get the component files
+        const component = await handleShow(repoAccess, options.component);
+        // Analysis will be handled by the caller
+        return component;
+        
       default:
         throw new Error(`Command not implemented yet: ${options.command}`);
     }
@@ -46,7 +55,7 @@ async function handleCLI(options) {
 /**
  * Handle list command
  */
-async function handleList(repoAccess) {
+async function handleList(repoAccess: any) {
   try {
     const components = await repoAccess.listComponents();
     
@@ -63,7 +72,7 @@ async function handleList(repoAccess) {
 /**
  * Handle show command
  */
-async function handleShow(repoAccess, componentName) {
+async function handleShow(repoAccess: any, componentName: string) {
   try {
     const files = await repoAccess.getComponentFiles(componentName);
     
@@ -89,7 +98,7 @@ async function handleShow(repoAccess, componentName) {
   }
 }
 
-// Export the handleCLI function
-module.exports = {
+// Export functions as default as well for CommonJS compatibility
+export default {
   handleCLI
 };

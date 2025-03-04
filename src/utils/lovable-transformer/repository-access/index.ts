@@ -1,10 +1,11 @@
-// Not using import/export syntax for better compatibility with the CLI tool
-const types = require('./types');
-const { LocalCloneAccess } = require('./local-clone');
-const { GitHubAPIAccess } = require('./github-api');
+import { ComponentFile } from './types';
+import { LocalCloneAccess } from './local-clone';
+import { GitHubAPIAccess } from './github-api';
+
+export { ComponentFile, LocalCloneAccess, GitHubAPIAccess };
 
 // Factory function to create repository access
-async function createRepositoryAccess(type, config) {
+export async function createRepositoryAccess(type: string, config: any) {
   if (type === 'github-api') {
     const access = new GitHubAPIAccess(config);
     await access.setup();
@@ -16,9 +17,9 @@ async function createRepositoryAccess(type, config) {
   }
 }
 
-// Export everything
-module.exports = {
-  ...types,
+// Export default for CommonJS compatibility
+export default {
+  ComponentFile,
   LocalCloneAccess,
   GitHubAPIAccess,
   createRepositoryAccess

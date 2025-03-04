@@ -9,9 +9,12 @@
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
     "generate-tokens": "ts-node scripts/generate-tailwind-config.ts",
+    "build:cli": "tsc -p tsconfig.cli.json",
     "component-tool": "node scripts/cli/lovable-transformer.js",
+    "component-tool:ts": "ts-node scripts/cli/lovable-transformer.ts",
     "test-repo-access": "node scripts/cli/test-repo-access.js",
-    "test-repo-access:cleanup": "node scripts/cli/test-repo-access.js --cleanup"
+    "test-repo-access:cleanup": "node scripts/cli/test-repo-access.js --cleanup",
+    "analyze-component": "ts-node scripts/cli/lovable-transformer.ts analyze"
   },
   "dependencies": {
     "commander": "^11.1.0",

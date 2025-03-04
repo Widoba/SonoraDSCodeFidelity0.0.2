@@ -1,7 +1,8 @@
-const fs = require('fs/promises');
-const path = require('path');
-const { exec } = require('child_process');
-const util = require('util');
+import * as fs from 'fs/promises';
+import * as path from 'path';
+import { exec } from 'child_process';
+import * as util from 'util';
+import { ComponentFile } from './types';
 
 // Convert exec to Promise-based
 const execAsync = util.promisify(exec);
@@ -9,7 +10,8 @@ const execAsync = util.promisify(exec);
 /**
  * Repository access implementation using local git clone
  */
-class LocalCloneAccess {
+export class LocalCloneAccess {
+  private config: any;
   constructor(config) {
     this.config = {
       branch: 'main',
@@ -196,7 +198,7 @@ class LocalCloneAccess {
   }
 }
 
-// Export the LocalCloneAccess class
-module.exports = {
+// Export default for CommonJS compatibility
+export default {
   LocalCloneAccess
 };

@@ -1,12 +1,23 @@
-// No need for imports in CommonJS
+import { ComponentFile } from './types';
 
-// Define Octokit shapes for documentation only
-// No actual type checking in CommonJS
+// Define Octokit interfaces for type checking
+interface OctokitContent {
+  name: string;
+  path: string;
+  type: 'file' | 'dir';
+  content?: string;
+}
+
+interface OctokitResponse<T> {
+  data: T;
+}
 
 /**
  * Repository access implementation using GitHub API
  */
-class GitHubAPIAccess {
+export class GitHubAPIAccess {
+  private config: any;
+  private octokit: any;
   constructor(config) {
     this.config = {
       ref: 'main',
@@ -157,7 +168,7 @@ class GitHubAPIAccess {
   }
 }
 
-// Export the GitHubAPIAccess class
-module.exports = {
+// Export default for CommonJS compatibility
+export default {
   GitHubAPIAccess
 };

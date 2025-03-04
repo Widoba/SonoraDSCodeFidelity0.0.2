@@ -1,30 +1,60 @@
 /**
  * Interface for component file
  */
-const ComponentFile = {}; // This is just for JSDoc, actual implementation is not type-checked in CommonJS
+export interface ComponentFile {
+  /**
+   * File name
+   */
+  name: string;
+  
+  /**
+   * Relative path to the file
+   */
+  path: string;
+  
+  /**
+   * File content
+   */
+  content: string;
+}
 
 /**
  * Interface for repository access
  */
-const RepositoryAccess = {};
+export interface RepositoryAccess {
+  setup(): Promise<void>;
+  listComponents(): Promise<string[]>;
+  getComponentFiles(componentName: string): Promise<ComponentFile[]>;
+}
 
 /**
  * Common configuration for repository access
  */
-const RepositoryConfig = {};
+export interface RepositoryConfig {
+  componentPattern: string;
+}
 
 /**
  * Configuration for local clone access
  */
-const LocalCloneConfig = {};
+export interface LocalCloneConfig extends RepositoryConfig {
+  repoUrl: string;
+  localPath: string;
+  branch?: string;
+}
 
 /**
  * Configuration for GitHub API access
  */
-const GitHubConfig = {};
+export interface GitHubConfig extends RepositoryConfig {
+  owner: string;
+  repo: string;
+  ref?: string;
+  auth?: string;
+}
 
-// Export types
-module.exports = {
+// Export default for CommonJS compatibility
+export default {
   ComponentFile,
   RepositoryAccess,
   RepositoryConfig,
